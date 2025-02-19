@@ -7,7 +7,7 @@ from fasthtml.svg import *
 
 app, rt = fast_app(hdrs=Theme.blue.headers())
 
-def login():    
+async def login():    
     left = Div(cls="col-span-1 hidden flex-col justify-between bg-zinc-900 p-8 text-white lg:flex")(
         Div(cls=(TextT.bold))("Acme Inc"),
         Blockquote(cls="space-y-2")(

@@ -17,10 +17,7 @@ def signups():
 
     right = Div(cls="col-span-2 flex flex-col p-8 lg:col-span-1")(
         DivRAligned(Button("Login", cls=ButtonT.ghost,
-                    hx_get="/",
-                    hx_target="body",
-                    hx_swap="outerHTML",
-                    hx_push_url="true")),
+       onclick="window.location.href='/';")),
         DivCentered(cls='flex-1')(
             Container(
                 DivVStacked(
@@ -43,5 +40,3 @@ def signups():
 
 
 
-
-serve()

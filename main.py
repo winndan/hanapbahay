@@ -5,17 +5,17 @@ from monsterui.all import *
 from auths.signup import signups
 from testi import tests
 
-app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True))
+app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True)
 
 
 
 
 @rt("/")
-def home():
+async def home():
     return homepage()  # ✅ Calls the function once, without recursion
 
 @rt("/signup")
-def signup_page():
+async def signup_page():
     return signups()  # ✅ Calls the function once, without recursion
 
 @rt("/test")

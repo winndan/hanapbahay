@@ -12,7 +12,7 @@ def homepage():
             Title('Bukana | Booking'),
             Script(src="https://unpkg.com/htmx.org@2.0.4")
         ),
-        Body(
+        Body( 
             Nav(
                 Div(
                     'Bukana',
@@ -27,13 +27,11 @@ def homepage():
                     cls='nav__links'
                 ),
                 Button(
-                    "Sign Up",
-                    cls='btn',
-                    hx_get="/signup",
-                    hx_target="body",
-                    hx_swap="outerrHTML",
-                    hx_push_url="true"
-                )
+                "Sign Up",
+                cls='btn',
+                onclick="window.location.href='/signup';"  # ✅ Full page reload
+            )
+
             ),
             Header(
                 Div(
@@ -141,5 +139,6 @@ def homepage():
                 cls='footer'
             )
         ),
-        lang='en'
+        lang='en',
+        hx_boost="true" 
     )
