@@ -3,6 +3,7 @@ from fasthtml.common import *
 from homepage.homepage import homepage
 from monsterui.all import *
 from auths.signup import signups
+from auths.login import login
 from testi import tests
 
 app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True)
@@ -17,6 +18,10 @@ async def home():
 @rt("/signup")
 async def signup_page():
     return signups()  # ✅ Calls the function once, without recursion
+
+@rt("/login")
+async def login_page():
+    return login() 
 
 @rt("/test")
 def test_page():

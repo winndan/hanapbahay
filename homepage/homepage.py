@@ -21,8 +21,8 @@ def homepage():
                 ),
                 Ul(
                     Li(A('Home', href='#'), cls='link'),
-                    Li(A('Destinations', href='#'), cls='link'),
-                    Li(A('Pricing', href='#'), cls='link'),
+                    Li(A('Rooms', href='#'), cls='link'),
+                    Li(A('How to use', href='#'), cls='link'),
                     Li(A('Reviews', href='#'), cls='link'),
                     cls='nav__links'
                 ),
@@ -36,17 +36,18 @@ def homepage():
             Header(
                 Div(
                     Div(
-                        Img(src='assets/header-1.jpg', alt='header'),
-                        Img(src='assets/header-2.jpg', alt='header'),
+                        Img(src='assets/header--1.jpg', alt='header'),
+                        Img(src='assets/header--2.jpg', alt='header'),
                         cls='header__image'
                     ),
                     Div(
                         Div(
-                            P('Book Now', cls='sub__header'),
-                            H1('The Smiling 😊', Br(), 'agent for travel'),
-                            P('Make your travel more enjoyable with us. We are the best travel agency and we provide the best travel services for our clients.', cls='section__subtitle'),
+                            P('Your Perfect Room Awaits – Book It in a Snap ✨', cls='sub__header'),
+                            H1('Rooms That Feel Like Home'),
+                            P('From Cozy Nooks to Luxurious Suites, Find the Ideal Room for Every Stay – Because Where You Rest Matters.', cls='section__subtitle'),
                             Div(
-                                Button('Login', cls='btn'),
+                                Button('Login', cls='btn',
+                                       onclick="window.location.href='/login';"),
                                 Div(
                                     Div(
                                         Img(src='assets/story.jpg', alt='story'),
@@ -67,8 +68,8 @@ def homepage():
             Section(
                 Div(
                     Div(
-                        H2('Explore top destinations', cls='section__title'),
-                        P('Explore your suitable and dream places around the world. Here you can find your right destination.', cls='section__subtitle')
+                        H2('Endless Room Options', cls='section__title'),
+                        P('Whether you need a budget-friendly single or a lavish suite, we’ve got rooms for every taste and budget.', cls='section__subtitle')
                     ),
                     Div(
                         Span(I(cls='ri-arrow-left-s-line')),
@@ -80,7 +81,7 @@ def homepage():
                 Div(
                     *[
                         Div(
-                            Img(src=f'assets/destination-{i}.jpg', alt='destination'),
+                            Img(src=f'assets/room{i}.jpg', alt='destination'),
                             Div(
                                 P(name, cls='destination__title'),
                                 P(location, cls='destination__subtitle'),
