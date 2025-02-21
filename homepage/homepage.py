@@ -47,7 +47,7 @@ def homepage():
                             P('From Cozy Nooks to Luxurious Suites, Find the Ideal Room for Every Stay – Because Where You Rest Matters.', cls='section__subtitle'),
                             Div(
                                 Button('Login', cls='btn',
-                                       onclick="window.location.href='/login';"),
+                                       onclick="window.location.href='/signin';"),
                                 Div(
                                     Div(
                                         Img(src='assets/story.jpg', alt='story'),

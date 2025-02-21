@@ -5,9 +5,6 @@ from fasthtml.common import *
 from monsterui.all import *
 import random
 
-# Using the "slate" theme with Highlight.js enabled
-hdrs = Theme.blue.headers(highlightjs=True)
-app, rt = fast_app(hdrs=hdrs)
 
 ################################
 ### Example Data and Content ###
@@ -84,8 +81,8 @@ scrollspy_links = (
                 A("Testimonials", href="#testimonials-section"), 
                 A("Best to Visit",         href="#visit-section")
                 )
-@rt
-def index():
+
+def user_page():
     def _Section(*c, **kwargs): return Section(*c, cls='space-y-3 my-48',**kwargs)
     return Container(
         NavBar(
@@ -113,5 +110,4 @@ def index():
        
             cls=(ContainerT.xl,'uk-container-expand')))
 
-serve()
 
