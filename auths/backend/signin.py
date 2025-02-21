@@ -16,7 +16,7 @@ def add_toast(message: str, status: str):
     )
 
 # 👉 Backend: Handle login request
-async def login_account(email: str, password: str):
+async def signin_account(email: str, password: str):
     try:
         # 👉 Show loading indicator
         loading_indicator = Script("document.getElementById('loading-indicator').classList.remove('hidden');")
@@ -41,7 +41,7 @@ async def login_account(email: str, password: str):
         return [
             hide_loading_indicator,
             add_toast("✅ Login successful! Redirecting...", "success"),
-            Script("window.location.href = '/dashboard/user';")
+            Script("window.location.href = '/user';")
         ]
     
     except Exception as e:
