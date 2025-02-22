@@ -2,6 +2,3 @@ supabase
 python-dotenv
 python-fasthtml
 monsterUi
-numpy
-plotly
-pandas
