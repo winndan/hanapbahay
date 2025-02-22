@@ -6,6 +6,7 @@ from auths.frontend.signin import signin_page
 from dashboard.frontend.user import user_page
 from auths.backend.signup import signup_account, check_password, check_confirm_password
 from auths.backend.signin import signin_account
+from dashboard.frontend.admin import dashboard
 from testi import tests
 
 app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True)
@@ -29,6 +30,9 @@ async def get_user_dashboard():
 async def get_signin_page():
     return signin_page()
 
+@rt("/admin")
+async def get_admin_page():
+    return dashboard()
 
 
 
