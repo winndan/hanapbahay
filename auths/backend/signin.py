@@ -1,48 +1,67 @@
-from fasthtml.common import *
-from db_connection import supabase
-import re
+from fasthtml.common import *  # ✅ Already imported
+from monsterui.all import *
+from db_connect import supabase
 
-# 👉 Toast Notification Function
-def add_toast(message: str, status: str):
-    toast_colors = {
-        "success": "text-green-500 bg-green-100 border border-green-400",
-        "error": "text-red-500 bg-red-100 border border-red-400",
-        "warning": "text-yellow-500 bg-yellow-100 border border-yellow-400",
-        "info": "text-blue-500 bg-blue-100 border border-blue-400"
-    }
-    return Div(cls=f"p-4 rounded-md {toast_colors.get(status, 'bg-gray-100')} p-3",
-               id="toast-container")(
-        P(message, cls="font-medium")
-    )
-
-# 👉 Backend: Handle login request
 async def signin_account(email: str, password: str):
     try:
-        # 👉 Show loading indicator
-        loading_indicator = Script("document.getElementById('loading-indicator').classList.remove('hidden');")
-        
-        # 👉 Perform user login
-        response = supabase.auth.sign_in_with_password({
+        print("🔍 Step 1: Received login request for email:", email)
+
+        # ✅ Ensure Supabase client exists
+        if supabase is None:
+            print("🚨 ERROR: Supabase client is not initialized!")
+            return Div(Alert("❌ Internal error: Database not connected!", cls=AlertT.error))
+
+        # ✅ Attempt login
+        login_response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
 
-        # 👉 Hide loading indicator after process
-        hide_loading_indicator = Script("document.getElementById('loading-indicator').classList.add('hidden');")
+        print("🔍 Step 2: Login Response:", login_response)
 
-        # 👉 Check for login errors
-        if not response.user:
-            return [
-                hide_loading_indicator,
-                add_toast("❌ Error: Invalid email or password!", "error")
-            ]
+        # ✅ Check if Supabase returned any response
+        if login_response is None:
+            print("🚨 ERROR: Supabase returned None for login!")
+            return Div(Alert("❌ Supabase error: No response from authentication.", cls=AlertT.error))
 
-        # 👉 Redirect to dashboard upon successful login
-        return [
-            hide_loading_indicator,
-            add_toast("✅ Login successful! Redirecting...", "success"),
-            Script("window.location.href = '/user';")
-        ]
-    
+        # ✅ Ensure response contains a user
+        user = getattr(login_response, "user", None)
+        if user is None:
+            print("🚨 ERROR: Supabase login response is missing user data!")
+            return Div(Alert("❌ Invalid email or password!", cls=AlertT.error))
+
+        print("🟢 Step 3: User authenticated successfully:", user.email)
+
+        # ✅ Extract session and access token
+        session = getattr(login_response, "session", None)
+        if session is None:
+            print("🚨 ERROR: No session returned from Supabase!")
+            return Div(Alert("❌ Error: No session found!", cls=AlertT.error))
+
+        access_token = getattr(session, "access_token", None)
+        if not access_token:
+            print("🚨 ERROR: No access token returned!")
+            return Div(Alert("❌ Error: Access token not found!", cls=AlertT.error))
+
+        print("🟢 Step 4: Access token retrieved.")
+
+        # ✅ Show success Alert & redirect after 2 seconds
+        response = Response(
+            Div(
+                Alert("✅ Login successful! Redirecting...", cls=AlertT.success),
+                Script(f"""
+                    setTimeout(function() {{
+                        document.cookie = 'auth_token={access_token}; path=/; Secure;';
+                        window.location.href='/user';
+                    }}, 2000);
+                """)
+            ),
+            status_code=200
+        )
+
+        print("🟢 Step 5: Response sent successfully.")
+        return response
+
     except Exception as e:
-        return add_toast(f"❌ Error: {str(e)}", "error")
+        print("❌ Exception in signin_account:", e)
+        return Div(Alert(f"❌ Error: {str(e)}", cls=AlertT.error))

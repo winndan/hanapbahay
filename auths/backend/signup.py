@@ -1,5 +1,5 @@
 from fasthtml.common import *
-from db_connection import supabase
+from db_connect import supabase
 import re
 
 # Password validation regex (8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)

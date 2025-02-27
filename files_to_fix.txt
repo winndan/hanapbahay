@@ -1,0 +1,432 @@
+main.py
+from fasthtml.common import *
+from monsterui.all import *
+from db_connect import supabase
+from homepage.homepage import homepage
+from auths.frontend.signup import signup_page
+from auths.frontend.signin import signin_page
+from dashboard.frontend.user import user_page
+from auths.backend.signup import signup_account, check_password, check_confirm_password
+
+app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True)
+
+# 🏠 Frontend Routes
+@rt("/")
+async def home():
+    return homepage()
+
+@rt("/signup")
+async def get_signup_page():
+    return signup_page()
+
+@rt("/signin")
+async def get_signin_page():
+    return signin_page()
+
+@rt("/user")
+async def get_user_dashboard(req):
+    """Retrieve user session and display the user dashboard."""
+    
+    print("🔍 Request Headers:", req.headers)
+    print("🔍 Request Cookies:", req.cookies)
+
+    auth_header = req.headers.get("Authorization")
+    token = None
+
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split("Bearer ")[1].strip()
+    else:
+        token = req.cookies.get("auth_token")  # Fallback to cookies
+
+    if not token:
+        print("🚨 No token found! Redirecting to signin.")
+        return Redirect("/signin")
+
+    try:
+        # ✅ Fix: Remove `await`, as `supabase.auth.get_user(token)` is NOT async
+        response = supabase.auth.get_user(token)
+
+        if not response or not response.user:
+            print("🚨 Invalid token! Redirecting to signin.")
+            return Redirect("/signin")
+
+        user_data = response.user
+        display_name = user_data.user_metadata.get("display_name", "User")
+
+        return user_page(display_name)
+
+    except Exception as e:
+        print("❌ Error fetching user data from Supabase:", e)
+        return Redirect("/signin")
+
+# 🔒 Backend Authentication Routes
+@rt("/api/signup", methods="post")
+async def post_signup_account(display_name: str, email: str, password: str, confirm_password: str):
+    return await signup_account(display_name, email, password, confirm_password)
+
+@rt("/api/signin", methods="post")
+async def post_signin_account(email: str, password: str):
+    """Handles user login and sets auth token."""
+    try:
+        print("🔍 Step 1: Received login request for email:", email)
+
+        if supabase is None:
+            print("🚨 ERROR: Supabase client is not initialized!")
+            return Script("window.location.href='/signin';")
+
+        login_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        print("🔍 Step 2: Login Response:", login_response)
+
+        if not login_response or not getattr(login_response, "user", None):
+            print("🚨 ERROR: Invalid credentials!")
+            return Script("window.location.href='/signin';")
+
+        # ✅ Extract user session data
+        session = getattr(login_response, "session", None)
+        if session is None:
+            print("🚨 ERROR: No session returned from Supabase!")
+            return Script("window.location.href='/signin';")
+
+        access_token = getattr(session, "access_token", None)
+        if not access_token:
+            print("🚨 ERROR: No access token returned!")
+            return Script("window.location.href='/signin';")
+
+        print("🟢 Step 3: User authenticated successfully.")
+
+        # ✅ Use JavaScript to redirect since HTMX doesn't follow `303 Redirect`
+        response = Response(
+            Script(f"""
+                document.cookie = 'auth_token={access_token}; path=/; Secure;';
+                window.location.href='/user';
+            """),
+            status_code=200
+        )
+
+        print("🟢 Step 4: Redirecting to dashboard.")
+        return response
+
+    except Exception as e:
+        print("❌ Exception in signin_account:", e)
+        return Script("window.location.href='/signin';")
+
+
+@rt("/api/check-password")
+async def get_check_password(password: str):
+    return await check_password(password)
+
+@rt("/api/check-confirm-password")
+async def get_check_confirm_password(password: str, confirm_password: str):
+    return await check_confirm_password(password, confirm_password)
+
+# ✅ Handle Email Verification Redirect
+@rt("/api/handle-verify", methods="get")
+async def handle_email_verification():
+    return Script("window.location.href = '/user';")
+
+if __name__ == "__main__":
+    serve()
+
+
+
+db_connect.py
+import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get Supabase URL and Key from environment variables
+url: str = os.getenv('supa_url')
+key: str = os.getenv('supa_key')
+
+# Check if the environment variables are loaded correctly
+if not url or not key:
+    raise ValueError("Supabase URL or Key not found in environment variables.")
+
+# Create Supabase client
+supabase: Client = create_client(url, key)
+print("Supabase client initialized successfully.")  # Debugging line
+
+
+auths/backend/signin.py
+from fasthtml.common import *  # ✅ Already imported
+from monsterui.all import *
+from db_connect import supabase
+
+async def signin_account(email: str, password: str):
+    try:
+        print("🔍 Step 1: Received login request for email:", email)
+
+        # ✅ Ensure Supabase client exists
+        if supabase is None:
+            print("🚨 ERROR: Supabase client is not initialized!")
+            return Div(Alert("❌ Internal error: Database not connected!", cls=AlertT.error))
+
+        # ✅ Attempt login
+        login_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        print("🔍 Step 2: Login Response:", login_response)
+
+        # ✅ Check if Supabase returned any response
+        if login_response is None:
+            print("🚨 ERROR: Supabase returned None for login!")
+            return Div(Alert("❌ Supabase error: No response from authentication.", cls=AlertT.error))
+
+        # ✅ Ensure response contains a user
+        user = getattr(login_response, "user", None)
+        if user is None:
+            print("🚨 ERROR: Supabase login response is missing user data!")
+            return Div(Alert("❌ Invalid email or password!", cls=AlertT.error))
+
+        print("🟢 Step 3: User authenticated successfully:", user.email)
+
+        # ✅ Extract session and access token
+        session = getattr(login_response, "session", None)
+        if session is None:
+            print("🚨 ERROR: No session returned from Supabase!")
+            return Div(Alert("❌ Error: No session found!", cls=AlertT.error))
+
+        access_token = getattr(session, "access_token", None)
+        if not access_token:
+            print("🚨 ERROR: No access token returned!")
+            return Div(Alert("❌ Error: Access token not found!", cls=AlertT.error))
+
+        print("🟢 Step 4: Access token retrieved.")
+
+        # ✅ Show success Alert & redirect after 2 seconds
+        response = Response(
+            Div(
+                Alert("✅ Login successful! Redirecting...", cls=AlertT.success),
+                Script(f"""
+                    setTimeout(function() {{
+                        document.cookie = 'auth_token={access_token}; path=/; Secure;';
+                        window.location.href='/user';
+                    }}, 2000);
+                """)
+            ),
+            status_code=200
+        )
+
+        print("🟢 Step 5: Response sent successfully.")
+        return response
+
+    except Exception as e:
+        print("❌ Exception in signin_account:", e)
+        return Div(Alert(f"❌ Error: {str(e)}", cls=AlertT.error))
+
+
+auths/frontend/signin.py
+from fasthtml.common import *
+from monsterui.all import *
+from fasthtml.svg import *
+
+# 👉 Frontend: Login page UI
+def signin_page():
+    Script(src="https://unpkg.com/htmx.org@2.0.4")
+
+    left = Div(cls="col-span-1 hidden flex-col justify-between p-8 text-white lg:flex bg-cover bg-center bg-no-repeat",
+               style="background-image: url('/assets/bg-auth.jpg');")(
+        Div(cls=(TextT.bold))("Bukana Hotels"),
+        Blockquote(cls="space-y-2")(
+            P(cls=TextT.lg)("""Login to access your personalized experience and manage your bookings effortlessly."""),
+            Footer(cls=TextT.sm)("Sign in now")))
+
+    right = Div(cls="col-span-2 flex flex-col p-8 lg:col-span-1")(
+        DivRAligned(Button("Back Home", cls=ButtonT.ghost, onclick="window.location.href='/';")),
+        DivCentered(cls='flex-1')(
+            Container(
+                DivVStacked(
+                    H3("Sign In"),
+                    Small("Enter your credentials below to access your account", cls=TextT.muted)
+                ),
+                # 🔹 Form with HTMX Integration (Includes Loading Indicator)
+                Form(method="post", action="/api/signin",
+                     hx_post="/api/signin",
+                     hx_trigger="submit",
+                     hx_target="#toast-container",
+                     hx_indicator="#loading-indicator",
+                     hx_on="htmx:after-request: this.reset();")(
+                    
+                    Input(name="email", placeholder="name@example.com", type="email", required=True),
+                    
+                    Input(name="password", placeholder="Password", type="password", required=True),
+                    
+                    # 🔹 Loading Indicator (Hidden Initially)
+                    Div(id="loading-indicator", cls="hidden text-center")(
+                        Loading(cls=LoadingT.spinner, htmx_indicator=True)
+                    ),
+
+                    # 🔹 Submit Button
+                    Button(
+                        UkIcon('log-in', cls='mr-2'),
+                        "Sign In", 
+                        cls=(ButtonT.primary, "w-full"), 
+                        type="submit"
+                    ),
+
+                    DividerSplit(Small("Or continue with"), cls=TextT.muted),
+                    
+                    Button(UkIcon('google', cls='mr-2'), "Google", cls=(ButtonT.default, "w-full")),
+                    
+                    cls='space-y-6'
+                ),
+                # 🔹 Toast Notification Container (For Success/Error Messages)
+                Div(id="toast-container", cls="absolute top-5 right-5"),
+                
+                DivVStacked(Small(
+                    "By signing in, you agree to our ",
+                    A(cls=AT.muted, href="#terms")("Terms of Service"), " and ",
+                    A(cls=AT.muted, href="#privacy")("Privacy Policy"), ".",
+                    cls=(TextT.muted, "text-center"))),
+                
+                cls="space-y-6"
+            )
+        )
+    )
+
+    return Title("Auth Example"), Grid(left, right, cols=2, gap=0, cls='h-screen')
+
+dashboard/frontend/user.py
+from fasthtml.common import *
+from monsterui.all import *
+
+# 👉 Sample Data
+products = [
+    {"name": "Laptop", "price": "$999"},
+    {"name": "Smartphone", "price": "$599"},
+]
+
+testimonials = [
+    {"name": "Alice", "feedback": "Great products and excellent customer service!"},
+    {"name": "Bob", "feedback": "Fast shipping and amazing quality!"},
+]
+
+team = [
+    {"name": "Isaac Flath", "role": "CEO"},
+    {"name": "Benjamin Clavié", "role": "AI Researcher"},
+]
+
+
+def ProductCard(p, img_id=1):
+    return Card(
+        PicSumImg(w=500, height=100, id=img_id),
+        DivFullySpaced(H4(p["name"]), P(Strong(p["price"], cls=TextT.sm))), 
+        Button("Details", cls=(ButtonT.primary, "w-full"))
+    )
+
+
+def TestimonialCard(t, img_id=1):
+    return Card(
+        DivLAligned(PicSumImg(w=50, h=50, cls='rounded-full', id=img_id), H4(t["name"])), 
+        P(Q((t["feedback"])))
+    )
+
+
+def TeamCard(m, img_id=1): 
+    return Card(
+        DivLAligned(
+            PicSumImg(w=50, h=50, cls='rounded-full', id=img_id), 
+            Div(H4(m["name"]), P(m["role"]))
+        ),
+        cls='p-3'
+    )
+
+
+def user_page(display_name):
+    return Container(
+        NavBar(
+            A("Welcome", href="#welcome-section"),
+            A("Products", href="#products-section"),
+            A("Testimonials", href="#testimonials-section"),
+            brand=DivLAligned(H3("Bukana"), UkIcon('rocket', height=30, width=30)),
+            sticky=True, uk_scrollspy_nav=True,
+            scrollspy_cls=ScrollspyT.bold
+        ),
+
+        Container(
+            DivCentered(
+                H1(f"Welcome, {display_name}!"),  # ✅ Personalized greeting
+                Subtitle("Explore our products and enjoy dynamic code examples."), 
+                id="welcome-section"
+            ),
+            Section(
+                H2("Products"),
+                Grid(*[ProductCard(p, img_id=i) for i, p in enumerate(products)], cols_lg=2),                   
+                id="products-section"
+            ),
+            Section(
+                H2("Testimonials"), 
+                Slider(*[TestimonialCard(t, img_id=i) for i, t in enumerate(testimonials)]),       
+                id="testimonials-section"
+            ),
+            Section(
+                H2("Our Team"), 
+                Grid(*[TeamCard(m, img_id=i) for i, m in enumerate(team)], cols_lg=2, cols_max=3),                          
+                id="team-section"
+            ),
+            cls=(ContainerT.xl, 'uk-container-expand')
+        )
+    )
+
+
+dashboard/backend/user.py
+from fasthtml.common import *
+from monsterui.all import *
+from db_connect import supabase
+from dashboard.frontend.user import user_page
+
+
+async def user_dashboard(req):
+    """Retrieve user session from Supabase and display the user dashboard."""
+    
+    auth_header = req.headers.get("Authorization")
+    token = None
+
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split("Bearer ")[1].strip()
+    else:
+        token = req.cookies.get("auth_token")  # ✅ Fallback to cookies
+
+    if not token:
+        print("🚨 No token found in request! Redirecting to signin.")
+        return Redirect("/signin")  # 🚨 Redirect if no token
+
+    try:
+        response = await supabase.auth.get_user(token)
+        if not response or not response.user:
+            print("🚨 Invalid token! Redirecting to signin.")
+            return Redirect("/signin")
+
+        user_data = response.user
+        display_name = user_data.user_metadata.get("display_name", "User")
+
+        # ✅ Debugging
+        dashboard_html = user_page(display_name)
+        print("🟢 Generated HTML Output:", dashboard_html)
+        
+        return dashboard_html
+
+    except Exception as e:
+        print("❌ Error fetching user data from Supabase:", e)
+        return Redirect("/signin")
+
+ERROR encounter:
+connection open
+INFO:     127.0.0.1:62670 - "POST /api/signin HTTP/1.1" 307 Temporary Redirect
+Request Headers: Headers({'host': '0.0.0.0:5001', 'connection': 'keep-alive', 'content-length': '266', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36', 'hx-target': 'toast-container', 'hx-current-url': 'http://0.0.0.0:5001/signin', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryMORLlMAszvFBAsw3', 'hx-request': 'true', 'accept': '*/*', 'sec-gpc': '1', 'accept-language': 'en-US,en;q=0.5', 'origin': 'http://0.0.0.0:5001', 'referer': 'http://0.0.0.0:5001/signin', 'accept-encoding': 'gzip, deflate', 'cookie': 'auth_token=eyJhbGciOiJIUzI1NiIsImtpZCI6IkRNYy9yK0p5R05VT3k4K3giLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3lmc3dqZXd5eG5ycmlmc3Z2ZXdxLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIyNGFmODg2Yy0yYjk4LTQyMGItODAwMS0yOTE0YTE2ZTY2MTEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQwNjMzMDAwLCJpYXQiOjE3NDA2Mjk0MDAsImVtYWlsIjoibGxhbmVzZGFubWFyY0BnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImRpc3BsYXlfbmFtZSI6ImRhbmRhbmxhbmRhbiIsImVtYWlsIjoibGxhbmVzZGFubWFyY0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiIyNGFmODg2Yy0yYjk4LTQyMGItODAwMS0yOTE0YTE2ZTY2MTEifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc0MDYyOTQwMH1dLCJzZXNzaW9uX2lkIjoiYjFiZTJlZTEtMTAyNi00OTE3LTg2MjItOGE3MDk0ZmI5OGU3IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.7tsBK4f6MG0j9yQzX8JQdK-czXkDCL_GG2cQcD3gFLQ'})
+Request Cookies: {'auth_token': 'eyJhbGciOiJIUzI1NiIsImtpZCI6IkRNYy9yK0p5R05VT3k4K3giLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3lmc3dqZXd5eG5ycmlmc3Z2ZXdxLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIyNGFmODg2Yy0yYjk4LTQyMGItODAwMS0yOTE0YTE2ZTY2MTEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQwNjMzMDAwLCJpYXQiOjE3NDA2Mjk0MDAsImVtYWlsIjoibGxhbmVzZGFubWFyY0BnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImRpc3BsYXlfbmFtZSI6ImRhbmRhbmxhbmRhbiIsImVtYWlsIjoibGxhbmVzZGFubWFyY0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiIyNGFmODg2Yy0yYjk4LTQyMGItODAwMS0yOTE0YTE2ZTY2MTEifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc0MDYyOTQwMH1dLCJzZXNzaW9uX2lkIjoiYjFiZTJlZTEtMTAyNi00OTE3LTg2MjItOGE3MDk0ZmI5OGU3IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.7tsBK4f6MG0j9yQzX8JQdK-czXkDCL_GG2cQcD3gFLQ'}
+❌ Error fetching user data from Supabase: name 'supabase' is not defined
+INFO:     127.0.0.1:62670 - "POST /user HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62670 - "GET /signin HTTP/1.1" 200 OK
+INFO:     connection closed
+INFO:     ('127.0.0.1', 62693) - "WebSocket /live-reload" [accepted]
+INFO:     connection open
