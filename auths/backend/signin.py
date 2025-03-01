@@ -9,7 +9,7 @@ async def signin_account(email: str, password: str):
         # ✅ Ensure Supabase client exists
         if supabase is None:
             print("🚨 ERROR: Supabase client is not initialized!")
-            return Div(Alert("❌ Internal error: Database not connected!", cls=AlertT.error))
+            return ex_alerts3("Internal error: Database not connected!")
 
         # ✅ Attempt login
         login_response = supabase.auth.sign_in_with_password({
@@ -22,33 +22,38 @@ async def signin_account(email: str, password: str):
         # ✅ Check if Supabase returned any response
         if login_response is None:
             print("🚨 ERROR: Supabase returned None for login!")
-            return Div(Alert("❌ Supabase error: No response from authentication.", cls=AlertT.error))
+            return ex_alerts3("Supabase error: No response from authentication.")
 
         # ✅ Ensure response contains a user
         user = getattr(login_response, "user", None)
         if user is None:
             print("🚨 ERROR: Supabase login response is missing user data!")
-            return Div(Alert("❌ Invalid email or password!", cls=AlertT.error))
+            return ex_alerts3("Invalid email or password!")
 
         print("🟢 Step 3: User authenticated successfully:", user.email)
+
+        # ✅ Check if the user has confirmed their email
+        if not getattr(user, "confirmed_at", None):
+            print("🚨 ERROR: Email not confirmed!")
+            return ex_alerts3("Please confirm your email before logging in.")
 
         # ✅ Extract session and access token
         session = getattr(login_response, "session", None)
         if session is None:
             print("🚨 ERROR: No session returned from Supabase!")
-            return Div(Alert("❌ Error: No session found!", cls=AlertT.error))
+            return ex_alerts3("Error: No session found!")
 
         access_token = getattr(session, "access_token", None)
         if not access_token:
             print("🚨 ERROR: No access token returned!")
-            return Div(Alert("❌ Error: Access token not found!", cls=AlertT.error))
+            return ex_alerts3("Error: Access token not found!")
 
         print("🟢 Step 4: Access token retrieved.")
 
-        # ✅ Show success Alert & redirect after 2 seconds
+        # ✅ Show success Toast & redirect after 2 seconds
         response = Response(
             Div(
-                Alert("✅ Login successful! Redirecting...", cls=AlertT.success),
+                ex_alerts2("✅ Login successful! Redirecting..."),
                 Script(f"""
                     setTimeout(function() {{
                         document.cookie = 'auth_token={access_token}; path=/; Secure;';
@@ -64,4 +69,4 @@ async def signin_account(email: str, password: str):
 
     except Exception as e:
         print("❌ Exception in signin_account:", e)
-        return Div(Alert(f"❌ Error: {str(e)}", cls=AlertT.error))
+        return ex_alerts3(f"Error: {str(e)}")

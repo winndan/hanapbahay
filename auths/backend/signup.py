@@ -1,73 +1,85 @@
 from fasthtml.common import *
 from db_connect import supabase
+from monsterui.all import *
 import re
 
-# Password validation regex (8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
+# ✅ Password validation regex (8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special char)
 PASSWORD_REGEX = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
 
-# 👉 Toast Notification Function
-def add_toast(message: str, status: str):
-    toast_colors = {
-        "success": "text-green-500 bg-green-100 border border-green-400",
-        "error": "text-red-500 bg-red-100 border border-red-400",
-        "warning": "text-yellow-500 bg-yellow-100 border border-yellow-400",
-        "info": "text-blue-500 bg-blue-100 border border-blue-400"
-    }
-    return Div(cls=f"p-4 rounded-md {toast_colors.get(status, 'bg-gray-100')} p-3",
-               id="toast-container")(
-        P(message, cls="font-medium")
+# ✅ Success Toast
+def ex_alerts2():
+    return Alert("✅ Your account has been successfully created!", cls=AlertT.success)
+
+# ✅ Error Toast
+def ex_alerts3(message="Please enter a valid email."):
+    return Alert(
+        DivLAligned(UkIcon('triangle-alert'), 
+                    P(f"❌ {message}")),
+        cls=AlertT.error
     )
 
-async def signup_account(display_name: str, email: str, password: str, confirm_password: str):
+# ✅ Signup Function with Improved Error Handling
+async def signup_account(display_name: str, email: str, password: str, confirm_password: str, session):
     try:
+        # ✅ Validate password and confirmation
         if password != confirm_password:
-            return add_toast("❌ Error: Passwords do not match!", "error")
+            return ex_alerts3("Passwords do not match!")
 
-        if not re.match(PASSWORD_REGEX, password):
-            return add_toast("❌ Error: Weak password!", "error")
+        if not re.fullmatch(PASSWORD_REGEX, password):
+            return ex_alerts3("Weak password! Must contain 8+ characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character.")
 
-        # 👉 Show loading indicator
-        loading_indicator = Script("document.getElementById('loading-indicator').classList.remove('hidden');")
+        print(f"🔍 Attempting to create user: {email}")
 
-        # 👉 Perform user signup (Ensure `display_name` is stored correctly)
+        # ✅ Perform user signup (Email confirmation required by Supabase)
         response = supabase.auth.sign_up({
             "email": email,
             "password": password,
-            "options": {"data": {"display_name": display_name}}  # Ensure metadata is included
+            "options": {"data": {"display_name": display_name}}
         })
 
-        # 👉 Hide loading indicator after process
-        hide_loading_indicator = Script("document.getElementById('loading-indicator').classList.add('hidden');")
+        print(f"🔍 Supabase Signup Response: {response}")  # ✅ Debugging response
 
-        # 👉 Check for signup errors
-        if not response.user:
-            return [
-                hide_loading_indicator,
-                add_toast("❌ Error: Signup failed! Please try again.", "error")
-            ]
+        # ✅ Check if signup was successful
+        if not response or hasattr(response, "error"):
+            error_msg = response.error.message if hasattr(response, "error") and response.error else "Signup failed! Please try again."
+            print(f"🚨 ERROR: {error_msg}")
+            return ex_alerts3(error_msg)
 
-        # 👉 Retrieve user details to ensure metadata is updated
-        user = supabase.auth.get_user()
-        retrieved_display_name = user.user_metadata.get("display_name", "") if user and user.user_metadata else ""
+        # ✅ Retrieve created user
+        user = response.user if hasattr(response, "user") else None
+        if not user:
+            print("🚨 ERROR: User object missing in response!")
+            return ex_alerts3("Signup failed! Supabase did not return user details.")
 
-        # 👉 Clear form fields after successful signup
+        print(f"🟢 Signup Successful for: {user.email}")
+
+        # ❌ REMOVE AUTO-LOGIN (Since email confirmation is required)
+        print("🔴 Email confirmation required. Auto-login disabled.")
+
+        # ✅ Show confirmation message instead of redirecting
         return [
-            hide_loading_indicator,
-            add_toast(f"✅ Welcome, {retrieved_display_name}! Please verify your email.", "success"),
-            Script("document.querySelector('form').reset();")
+            ex_alerts2(),
+            Alert(
+                DivLAligned(UkIcon('mail'), 
+                            P(f"✅ Account created successfully! Please check {email} for a confirmation link.")),
+                cls=AlertT.success
+            ),
+            Script("setTimeout(() => { window.location.replace('/signin'); }, 5000);")  # Redirect after 5 sec
         ]
 
     except Exception as e:
-        error_message = str(e).lower()
-        if "user already registered" in error_message or "email already exists" in error_message:
-            return add_toast("❌ Error: Email already exists! Please try another email.", "error")
-        return add_toast(f"❌ Error: {str(e)}", "error")
+        print(f"❌ Exception in signup_account: {e}")
+        return ex_alerts3(f"Unexpected error: {str(e)}")
 
+
+
+# ✅ Check Password Strength
 async def check_password(password: str):
-    if not re.match(PASSWORD_REGEX, password):
-        return Small(cls="text-red-500")("❌ Weak password!")
+    if not re.fullmatch(PASSWORD_REGEX, password):
+        return Small(cls="text-red-500")("❌ Weak password! Must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character.")
     return Small(cls="text-green-500")("✅ Strong password!")
 
+# ✅ Check Password Confirmation
 async def check_confirm_password(password: str, confirm_password: str):
     if password != confirm_password:
         return Small(cls="text-red-500")("❌ Passwords do not match!")

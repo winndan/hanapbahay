@@ -22,7 +22,7 @@ async def get_user_dashboard(req):
         return Redirect("/signin")
 
     try:
-        # ✅ Fix: Remove `await`, as `supabase.auth.get_user(token)` is not async
+        # ✅ Get user details from Supabase
         response = supabase.auth.get_user(token)
 
         if not response or not response.user:
@@ -31,8 +31,9 @@ async def get_user_dashboard(req):
 
         user_data = response.user
         display_name = user_data.user_metadata.get("display_name", "User")
+        user_email = user_data.email  # ✅ Retrieve user email
 
-        return user_page(display_name)  # ✅ Ensure display_name is passed
+        return user_page(display_name, user_email)  # ✅ Pass both arguments
 
     except Exception as e:
         print("❌ Error fetching user data from Supabase:", e)
