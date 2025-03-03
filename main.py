@@ -2,7 +2,7 @@ import os
 from fasthtml.common import *
 from monsterui.all import *
 from db_connect import supabase
-from homepage.homepage import homepage
+from homepage.homapageone import homepage
 from auths.frontend.signup import signup_page
 from auths.frontend.signin import signin_page
 from dashboard.frontend.user import user_page
@@ -10,6 +10,10 @@ from auths.backend.signup import signup_account, check_password, check_confirm_p
 from booking.frontend.bookings import bookings_page
 import datetime
 from datetime import datetime
+import re
+
+
+
 
 # ✅ Success Message Function
 def ex_alerts2():
@@ -32,10 +36,27 @@ def before(req, session):
     if not auth:
         return RedirectResponse('/signin', status_code=303)  # Redirect if no user
 
-bware = Beforeware(before, skip=['/', '/signin', '/signup', '/api/signin', '/api/signup', '/api/check-password', '/api/check-confirm-password'])
+skip_routes = [
+    r'/',  # Home route
+    r'/signin',
+    r'/signup',
+    r'/api/signin',
+    r'/api/signup',
+    r'/api/check-password',
+    r'/api/check-confirm-password',
+    r'/styles/.*',  # Allow all files under /styles/
+    r'/assets/.*'   # Allow all files under /assets/
+]
+
+bware = Beforeware(
+    before, 
+    skip=skip_routes  # Pass the list directly
+)
 
 
 app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True, before=bware)
+
+
 
 # 🏠 Frontend Routes
 @rt("/")
