@@ -54,7 +54,7 @@ bware = Beforeware(
 )
 
 
-app, rt = fast_app(hdrs=Theme.slate.headers(daisy=True), live=True, before=bware)
+app, rt = fast_app(hdrs=Theme.neutral.headers(daisy=True), live=True, before=bware)
 
 
 

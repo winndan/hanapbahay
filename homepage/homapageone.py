@@ -37,10 +37,10 @@ def homepage():
                 A('SERVICES', href='#service')
             ),
             Li(
-                A('PROPERTIES', href='#property')
+                A('ROOMS', href='#property')
             ),
             Li(
-                A('SIGN IN', href='#signin')
+                A('SIGN IN', href='/signin')
             ),
             Li(
                 A(
@@ -61,7 +61,7 @@ def homepage():
         Header(
             Div(cls='header__image'),
             Div(
-                H1('Easy way to find your dream property'),
+                H1('Your Perfect Room Awaits – Book It in a Snap ✨'),
                 cls='header__content'
             ),
         id='header'
@@ -72,20 +72,20 @@ def homepage():
                 Div(
                     Div(
                         Img(src='/assets/service-1.png', alt='service'),
-                        H4('Evaluate Property'),
-                        P("Get a detailed assessment of your property's market value and\r\n              potential. Our experts ensure you have the right insights to make\r\n              informed decisions."),
+                        H4('1️⃣ Sign Up & Confirm Email'),
+                        P("User signs up by providing their email and creating a password.\r\n              A verification email is sent to confirm their account.\r\n              Once confirmed, the user can proceed to log in."),
                         cls='service__card'
                     ),
                     Div(
                         Img(src='/assets/service-2.png', alt='service'),
-                        H4('Meet Your Agent'),
-                        P('Connect with a professional real estate agent who will guide you\r\n              every step of the way. Personalized support makes your buying or\r\n              selling journey effortless.'),
+                        H4('2️⃣ Log In'),
+                        P('The user enters their email and password to access their account.\r\n              After successful login, they can browse available rooms.'),
                         cls='service__card'
                     ),
                     Div(
                         Img(src='/assets/service-3.png', alt='service'),
-                        H4('Close The Deal'),
-                        P('Complete your transaction with confidence and ease. We ensure a\r\n              smooth process so you can secure your dream property without\r\n              hassle.'),
+                        H4('3️⃣ Book a Room'),
+                        P('The user selects a room from the available listings.\r\n             They fill out the booking form, including check-in/check-out dates and number of guests.\r\n              After submitting, they receive a confirmation of their booking.'),
                         cls='service__card'
                     ),
                     cls='service__grid'
@@ -99,14 +99,14 @@ def homepage():
             Div(cls='experience__image'),
             Div(
                 H2(
-                    'We Provide You',
+                    'We Provide You Rooms',
                     Br(),
-                    'The Best Experience',
+                    'That Feel Like Home',
                     cls='section__header'
                 ),
-                P('Finding the perfect property should be an exciting and hassle-free\r\n          journey, and we are here to make that happen. With our expert\r\n          guidance, personalized support, and in-depth market knowledge, we\r\n          ensure a smooth and seamless real estate experience. Whether you are\r\n          buying, selling, or investing, we provide top-notch services, reliable\r\n          assistance, and the best deals to help you make informed decisions.'),
+                P('From Cozy Nooks to Luxurious Suites, Find the Ideal Room for Every Stay – Because Where You Rest Matters.\r\n          journey, and we are here to make that happen. With our expert\r\n          guidance, personalized support, and in-depth market knowledge, we\r\n          ensure a smooth and seamless booking experience. Whether you rent\r\n          long term or short term, we provide top-notch services, reliable\r\n          assistance, and the best deals to help you make informed decisions.'),
                 Div(
-                    Button('ALL PROPERTY', cls='btn',onclick="window.location.href='/signin';"),
+                    Button('SIGN IN', cls='btn',onclick="window.location.href='/signin';"),
                     cls='experience__btn'
                 ),
                 cls='experience__content'
@@ -129,7 +129,7 @@ def homepage():
             cls='experience'
         ),
         Section(
-            H2('Latest Property', cls='section__header'),
+            H2('OUR ROOMS', cls='section__header'),
             Div(
                 Div(
                     Div(
@@ -373,10 +373,10 @@ def homepage():
             Div(
                 Div(
                     Div(
-                        A('Hosale.', href='#'),
+                        A('Bukana.', href='#'),
                         cls='footer__logo'
                     ),
-                    P("At Hosale, we make buying, selling, and investing in properties easy\r\n            and stress-free. Let's turn your real estate goals into reality!"),
+                    P("At Bukana, we make trips, vacations, and room stays easy.\r\n            Let’s turn your travel dreams into reality!"),
                     Ul(
                         Li(
                             A(
@@ -417,7 +417,7 @@ def homepage():
                     cls='footer__col'
                 ),
                 Div(
-                    H4('SUPPORT'),
+                    H4('RULES'),
                     Ul(
                         Li(
                             A('FAQs', href='#')
@@ -455,7 +455,7 @@ def homepage():
                 ),
                 cls='section__container footer__container'
             ),
-            Div('Copyright © 2025 Web Design Mastery. All rights reserved.', cls='footer__bar')
+            Div('Copyright © Bukana Hotels. All rights reserved.', cls='footer__bar')
         ),
         Script(src='https://unpkg.com/scrollreveal'),
         Script(src='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js'),
