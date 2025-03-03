@@ -2,7 +2,7 @@ from fasthtml.common import *
 from monsterui.all import *
 from db_connect import supabase, supabase_url
 
-supa_url = supabase_url
+supa_url = "https://yfswjewyxnrrifsvvewq.supabase.co"
 
 # ✅ Fetch Rooms from Supabase
 def fetch_rooms():
@@ -31,8 +31,16 @@ def booking_status_badge(status):
 # ✅ Room Card Component
 def RoomCard(room, display_name, email):
     modal_id = f"modal-{room['room_number']}"  
-    SUPABASE_BUCKET_URL = f"{supa_url}/storage/v1/object/public/room-images/"
-    image_url = f"{SUPABASE_BUCKET_URL}{room['image_id']}" if room["image_id"] else "/default-room.jpg"
+    SUPABASE_BUCKET_URL = f"{supa_url}/storage/v1/object/public/room-images/room_images"
+
+    # Debugging prints
+    print(f"Supabase URL: {supa_url}")
+    print(f"Image ID: {room.get('image_id')}")
+    
+    # Ensure image_id is correctly assigned
+    image_url = f"{SUPABASE_BUCKET_URL}/{room['image_id']}" if room.get("image_id") else "/default-room.jpg"
+    
+    print(f"Generated Image URL: {image_url}")  # Debugging URL
 
     return Div(
         Card(
@@ -45,6 +53,7 @@ def RoomCard(room, display_name, email):
         ),
         RoomDetailsModal(room, modal_id, display_name, email, image_url)
     )
+
 
 # ✅ Room Details Modal
 def RoomDetailsModal(room, modal_id, display_name, email, image_url):
